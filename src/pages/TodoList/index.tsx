@@ -6,10 +6,15 @@ import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import OutlinedInput from "@mui/material/OutlinedInput";
 import Typography from "@mui/material/Typography";
+import Select, { SelectChangeEvent } from "@mui/material/Select";
+import MenuItem from "@mui/material/MenuItem";
 import DeleteIcon from "@mui/icons-material/Delete";
 import EditIcon from "@mui/icons-material/Edit";
 import SaveAsIcon from "@mui/icons-material/SaveAs";
 import ClearIcon from "@mui/icons-material/Clear";
+import StraightIcon from "@mui/icons-material/Straight";
+import SouthIcon from "@mui/icons-material/South";
+import FiberManualRecordIcon from "@mui/icons-material/FiberManualRecord";
 
 import styled from "@emotion/styled";
 
@@ -40,8 +45,8 @@ const ListSection = styled.div`
   align-items: center;
 `;
 const List = styled.div`
-  width: 60%;
-  height: 88%;
+  width: 70%;
+  height: 100%;
   overflow-y: scroll;
   box-shadow: rgba(0, 0, 0, 0.1) 0px 4px 12px;
 `;
@@ -59,6 +64,13 @@ const Option = styled.div`
   }
 `;
 
+const SortSection = styled.div`
+  width: 86%;
+  display: flex;
+  justify-content: end;
+  margin-top: 3px;
+`;
+
 const TodoListGet = async () => {
   const res = axios.get("http://localhost:3000/todo");
   return res;
@@ -69,6 +81,8 @@ const TodoList = () => {
   const [inputVal, setInputVal] = useState("");
   const [isEdit, setIsEdit] = useState("");
   const [updateVal, setUpdateVal] = useState(null);
+  const [dateSort, setDateSort] = useState(null);
+  const [prioritySort, setPrioritySort] = useState(null);
   const ref = useRef(null);
   const { data, refetch } = useQuery({
     queryKey: ["todos"],
@@ -96,8 +110,19 @@ const TodoList = () => {
     }
   };
 
+  const sortHandler = async ({ field, sort }) => {
+    try {
+      const res = await axios.post("http://localhost:3000/sort", {
+        field,
+        sort,
+      });
+      res?.data?.data && setTodoList(res?.data?.data);
+    } catch (e) {}
+  };
+
   const handleClickOutside = () => {
     setIsEdit("");
+    setUpdateVal(null);
   };
 
   useOnClickOutside(ref, handleClickOutside);
@@ -135,22 +160,102 @@ const TodoList = () => {
             value={inputVal}
             id="outlined-adornment-weight"
             aria-describedby="outlined-weight-helper-text"
-            sx={{ height: "48px", width: "60%" }}
-            endAdornment={
-              <Button
-                variant="contained"
-                size="small"
-                sx={{ textTransform: "none" }}
-                onClick={addHandler}
-              >
-                add
-              </Button>
-            }
+            sx={{ height: "40px", width: "25%" }}
             onChange={(e) => {
               setInputVal(e.target.value);
             }}
           />
+          <Select
+            displayEmpty
+            inputProps={{ "aria-label": "Without label" }}
+            sx={{ height: "40px", margin: "0px 6px", width: "15%" }}
+          >
+            <MenuItem value={0}>
+              <em>None</em>
+            </MenuItem>
+            <MenuItem value={1}>
+              <FiberManualRecordIcon sx={{ color: "green",height: "15px" }}/>
+               Low
+            </MenuItem>
+            <MenuItem value={2}>
+              <FiberManualRecordIcon sx={{ color: "orange", height: "15px" }} />
+              Medium
+            </MenuItem>
+            <MenuItem value={3}>
+              <FiberManualRecordIcon sx={{ color: "red", height: "15px" }} />
+              High
+            </MenuItem>
+          </Select>
+          <OutlinedInput
+            type="date"
+            value={inputVal}
+            id="outlined-adornment-weight"
+            aria-describedby="outlined-weight-helper-text"
+            sx={{ height: "40px", width: "20%", marginRight: "6px" }}
+          />
+          <Button
+            variant="contained"
+            size="small"
+            sx={{ textTransform: "none" }}
+            onClick={addHandler}
+          >
+            add
+          </Button>
         </AddSection>
+        <SortSection>
+          <div>
+            <Button
+              sx={{
+                textTransform: "none",
+                borderRadius: "30px",
+                height: "30px",
+              }}
+              onClick={() => {
+                const sort = !dateSort
+                  ? "asc"
+                  : dateSort === "asc"
+                  ? "desc"
+                  : "asc";
+                setDateSort(sort);
+                sortHandler({ field: "created_date", sort });
+              }}
+              endIcon={
+                !dateSort || dateSort === "asc" ? (
+                  <StraightIcon />
+                ) : (
+                  <SouthIcon />
+                )
+              }
+            >
+              Date
+            </Button>
+            <Button
+              sx={{
+                textTransform: "none",
+                borderRadius: "30px",
+                height: "30px",
+              }}
+              onClick={() => {
+                const sort = !prioritySort
+                  ? "asc"
+                  : prioritySort === "asc"
+                  ? "desc"
+                  : "asc";
+                setPrioritySort(sort);
+                // sortHandler({ field: "priority", sort });
+              }}
+              endIcon={
+                !prioritySort || prioritySort === "asc" ? (
+                  <StraightIcon />
+                ) : (
+                  <SouthIcon />
+                )
+              }
+            >
+              Priority
+            </Button>
+          </div>
+        </SortSection>
         <ListSection>
           <List>
             {todoList.map((todo) => {
@@ -177,6 +282,7 @@ const TodoList = () => {
                       sx={{ cursor: "pointer" }}
                       onClick={() => {
                         setIsEdit("");
+                        setUpdateVal(null);
                       }}
                     />
                   </div>
