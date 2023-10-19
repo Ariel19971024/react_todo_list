@@ -1,12 +1,15 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import axios from "axios";
 import { useQuery } from "react-query";
+import { useOnClickOutside } from "usehooks-ts";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import OutlinedInput from "@mui/material/OutlinedInput";
 import Typography from "@mui/material/Typography";
 import DeleteIcon from "@mui/icons-material/Delete";
 import EditIcon from "@mui/icons-material/Edit";
+import SaveAsIcon from "@mui/icons-material/SaveAs";
+import ClearIcon from "@mui/icons-material/Clear";
 
 import styled from "@emotion/styled";
 
@@ -64,7 +67,10 @@ const TodoListGet = async () => {
 const TodoList = () => {
   const [todoList, setTodoList] = useState([]);
   const [inputVal, setInputVal] = useState("");
-  const { data } = useQuery({
+  const [isEdit, setIsEdit] = useState("");
+  const [updateVal, setUpdateVal] = useState(null);
+  const ref = useRef(null);
+  const { data, refetch } = useQuery({
     queryKey: ["todos"],
     queryFn: TodoListGet,
   });
@@ -72,17 +78,34 @@ const TodoList = () => {
     try {
       await axios.post("http://localhost:3000/todo", { text: inputVal });
       setInputVal("");
-      const res = await axios.get("http://localhost:3000/todo");
-      setTodoList(res.data);
+      refetch();
     } catch (e) {}
   };
 
   const deleteHandler = async (id) => {
-    console.log(id)
+    await axios.delete(`http://localhost:3000/todo/${id}`);
+    refetch();
   };
 
+  const updateHandler = async (id) => {
+    try {
+      await axios.put(`http://localhost:3000/todo/${id}`, { text: updateVal });
+      refetch();
+    } catch (e) {
+      //
+    }
+  };
+
+  const handleClickOutside = () => {
+    setIsEdit("");
+  };
+
+  useOnClickOutside(ref, handleClickOutside);
+
   useEffect(() => {
-    data && setTodoList(data?.data);
+    data?.data && setTodoList(data?.data?.data);
+    setIsEdit("");
+    setUpdateVal(null);
   }, [data]);
 
   return (
@@ -130,18 +153,50 @@ const TodoList = () => {
         </AddSection>
         <ListSection>
           <List>
-            {todoList.map((todo) => (
-              <Option key={todo.id}>
-                <Typography sx={{ ml: "8px" }}>{todo.text}</Typography>
-                <div>
-                  <EditIcon sx={{ cursor: "pointer" }} />
-                  <DeleteIcon
-                    sx={{ cursor: "pointer" }}
-                    onClick={() => deleteHandler(todo.id)}
+            {todoList.map((todo) => {
+              return isEdit === todo.id ? (
+                <Option key={todo.id} ref={ref}>
+                  <OutlinedInput
+                    value={updateVal}
+                    id="outlined-adornment-weight"
+                    aria-describedby="outlined-weight-helper-text"
+                    sx={{
+                      height: "30px",
+                      width: "80%",
+                      backgroundColor: "#ffff",
+                    }}
+                    onChange={(e) => setUpdateVal(e.target.value)}
+                    defaultValue={todo.text}
                   />
-                </div>
-              </Option>
-            ))}
+                  <div>
+                    <SaveAsIcon
+                      sx={{ cursor: "pointer" }}
+                      onClick={() => updateHandler(todo.id)}
+                    />
+                    <ClearIcon
+                      sx={{ cursor: "pointer" }}
+                      onClick={() => {
+                        setIsEdit("");
+                      }}
+                    />
+                  </div>
+                </Option>
+              ) : (
+                <Option key={todo.id}>
+                  <Typography sx={{ ml: "8px" }}>{todo.text}</Typography>
+                  <div>
+                    <EditIcon
+                      sx={{ cursor: "pointer" }}
+                      onClick={() => setIsEdit(todo.id)}
+                    />
+                    <DeleteIcon
+                      sx={{ cursor: "pointer" }}
+                      onClick={() => deleteHandler(todo.id)}
+                    />
+                  </div>
+                </Option>
+              );
+            })}
           </List>
         </ListSection>
       </Box>
