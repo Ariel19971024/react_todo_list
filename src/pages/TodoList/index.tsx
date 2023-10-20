@@ -6,75 +6,44 @@ import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import OutlinedInput from "@mui/material/OutlinedInput";
 import Typography from "@mui/material/Typography";
-import Select, { SelectChangeEvent } from "@mui/material/Select";
+import Select from "@mui/material/Select";
 import MenuItem from "@mui/material/MenuItem";
-import DeleteIcon from "@mui/icons-material/Delete";
-import EditIcon from "@mui/icons-material/Edit";
+import DeleteIcon from "@mui/icons-material/DeleteOutlineOutlined";
+import EditIcon from "@mui/icons-material/AutoFixHighOutlined";
 import SaveAsIcon from "@mui/icons-material/SaveAs";
 import ClearIcon from "@mui/icons-material/Clear";
 import StraightIcon from "@mui/icons-material/Straight";
 import SouthIcon from "@mui/icons-material/South";
 import FiberManualRecordIcon from "@mui/icons-material/FiberManualRecord";
-
-import styled from "@emotion/styled";
-
-const Header = styled.div`
-  width: 100%;
-  height: 15%;
-  text-align: center;
-  line-height: 150px;
-  font-family: monospace;
-  font-size: 50px;
-  font-weight: 600;
-  background-image: linear-gradient(to left, #1530c3, #cfd5fe);
-  color: transparent;
-  background-clip: text;
-  -webkit-background-clip: text;
-`;
-const AddSection = styled.div`
-  width: 100%;
-  display: flex;
-  justify-content: center;
-  margin-top: 30px;
-`;
-const ListSection = styled.div`
-  width: 100%;
-  height: 65%;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-`;
-const List = styled.div`
-  width: 70%;
-  height: 100%;
-  overflow-y: scroll;
-  box-shadow: rgba(0, 0, 0, 0.1) 0px 4px 12px;
-`;
-
-const Option = styled.div`
-  width: 99%;
-  margin: 3px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  min-height: 45px;
-  background: #eceff0;
-  &:hover {
-    opacity: 0.7;
-  }
-`;
-
-const SortSection = styled.div`
-  width: 86%;
-  display: flex;
-  justify-content: end;
-  margin-top: 3px;
-`;
+import {
+  Header,
+  AddSection,
+  ListSection,
+  List,
+  Option,
+  SortSection,
+  FlexSection,
+  StatusSection,
+} from "./style.ts";
 
 const TodoListGet = async () => {
   const res = axios.get("http://localhost:3000/todo");
   return res;
 };
+
+const PriorityColor = {
+  0: "#7a7474",
+  1: "#3fbe40",
+  2: "#ffa500",
+  3: "#de1c1c",
+};
+
+const PriorityOptions = [
+  { label: "None", value: 0 },
+  { label: "Low", value: 1 },
+  { label: "Medium", value: 2 },
+  { label: "High", value: 3 },
+];
 
 const TodoList = () => {
   const [todoList, setTodoList] = useState([]);
@@ -82,16 +51,28 @@ const TodoList = () => {
   const [isEdit, setIsEdit] = useState("");
   const [updateVal, setUpdateVal] = useState(null);
   const [dateSort, setDateSort] = useState(null);
+  const [priority, setPriority] = useState(0);
   const [prioritySort, setPrioritySort] = useState(null);
+  const [date, setDate] = useState<string | null>(null);
   const ref = useRef(null);
   const { data, refetch } = useQuery({
     queryKey: ["todos"],
     queryFn: TodoListGet,
   });
+
+  const clearData = () => {
+    setInputVal("");
+    setPriority(0);
+    setDate(null);
+  };
   const addHandler = async () => {
     try {
-      await axios.post("http://localhost:3000/todo", { text: inputVal });
-      setInputVal("");
+      await axios.post("http://localhost:3000/todo", {
+        text: inputVal,
+        created_date: date,
+        priority: priority,
+      });
+      clearData();
       refetch();
     } catch (e) {}
   };
@@ -167,28 +148,24 @@ const TodoList = () => {
           />
           <Select
             displayEmpty
+            value={priority}
+            onChange={(e) => setPriority(Number(e.target.value))}
             inputProps={{ "aria-label": "Without label" }}
             sx={{ height: "40px", margin: "0px 6px", width: "15%" }}
           >
-            <MenuItem value={0}>
-              <em>None</em>
-            </MenuItem>
-            <MenuItem value={1}>
-              <FiberManualRecordIcon sx={{ color: "green",height: "15px" }}/>
-               Low
-            </MenuItem>
-            <MenuItem value={2}>
-              <FiberManualRecordIcon sx={{ color: "orange", height: "15px" }} />
-              Medium
-            </MenuItem>
-            <MenuItem value={3}>
-              <FiberManualRecordIcon sx={{ color: "red", height: "15px" }} />
-              High
-            </MenuItem>
+            {PriorityOptions.map(({ label, value }) => (
+              <MenuItem value={value}>
+                <FiberManualRecordIcon
+                  sx={{ color: `${PriorityColor[value]}`, height: "15px" }}
+                />
+                {label}
+              </MenuItem>
+            ))}
           </Select>
           <OutlinedInput
             type="date"
-            value={inputVal}
+            value={date}
+            onChange={(e) => setDate(String(e.target.value))}
             id="outlined-adornment-weight"
             aria-describedby="outlined-weight-helper-text"
             sx={{ height: "40px", width: "20%", marginRight: "6px" }}
@@ -242,7 +219,7 @@ const TodoList = () => {
                   ? "desc"
                   : "asc";
                 setPrioritySort(sort);
-                // sortHandler({ field: "priority", sort });
+                sortHandler({ field: "priority", sort });
               }}
               endIcon={
                 !prioritySort || prioritySort === "asc" ? (
@@ -256,6 +233,7 @@ const TodoList = () => {
             </Button>
           </div>
         </SortSection>
+        {/* TODO: Can be split out */}
         <ListSection>
           <List>
             {todoList.map((todo) => {
@@ -289,17 +267,42 @@ const TodoList = () => {
                 </Option>
               ) : (
                 <Option key={todo.id}>
-                  <Typography sx={{ ml: "8px" }}>{todo.text}</Typography>
-                  <div>
+                  <FlexSection>
+                    <StatusSection>
+                      <FiberManualRecordIcon
+                        sx={{
+                          color: `${PriorityColor[todo.priority]}`,
+                          height: "15px",
+                        }}
+                      />
+                    </StatusSection>
+                    <Typography sx={{ ml: "8px" }}>{todo.text}</Typography>
+                  </FlexSection>
+                  <FlexSection>
+                    {todo?.created_date && (
+                      <Typography
+                        variant="body1"
+                        component="div"
+                        sx={{
+                          display: "flex",
+                          alignItems: "center",
+                          fontSize: "15px",
+                          marginRight: "10px",
+                          color: "#726a6a",
+                        }}
+                      >
+                        {todo?.created_date?.split("T")[0]}
+                      </Typography>
+                    )}
                     <EditIcon
-                      sx={{ cursor: "pointer" }}
+                      sx={{ cursor: "pointer", color: "#3fbe40" }}
                       onClick={() => setIsEdit(todo.id)}
                     />
                     <DeleteIcon
-                      sx={{ cursor: "pointer" }}
+                      sx={{ cursor: "pointer", color: "#de1c1c" }}
                       onClick={() => deleteHandler(todo.id)}
                     />
-                  </div>
+                  </FlexSection>
                 </Option>
               );
             })}
