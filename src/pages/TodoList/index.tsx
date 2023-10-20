@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from "react";
 import axios from "axios";
+import { Global, css } from "@emotion/react";
 import { useQuery } from "react-query";
 import { useOnClickOutside } from "usehooks-ts";
-import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import OutlinedInput from "@mui/material/OutlinedInput";
 import Typography from "@mui/material/Typography";
@@ -16,6 +16,8 @@ import StraightIcon from "@mui/icons-material/Straight";
 import SouthIcon from "@mui/icons-material/South";
 import FiberManualRecordIcon from "@mui/icons-material/FiberManualRecord";
 import {
+  Container,
+  Card,
   Header,
   AddSection,
   ListSection,
@@ -53,7 +55,7 @@ const TodoList = () => {
   const [dateSort, setDateSort] = useState(null);
   const [priority, setPriority] = useState(0);
   const [prioritySort, setPrioritySort] = useState(null);
-  const [date, setDate] = useState<string | null>(null);
+  const [date, setDate] = useState<string | null>("");
   const ref = useRef(null);
   const { data, refetch } = useQuery({
     queryKey: ["todos"],
@@ -63,7 +65,7 @@ const TodoList = () => {
   const clearData = () => {
     setInputVal("");
     setPriority(0);
-    setDate(null);
+    setDate("");
   };
   const addHandler = async () => {
     try {
@@ -115,43 +117,38 @@ const TodoList = () => {
   }, [data]);
 
   return (
-    <Box
-      sx={{
-        bgcolor: "#cfe8fc",
-        height: "100vh",
-        width: "100vw",
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-      }}
-    >
-      <Box
-        sx={{
-          bgcolor: "#ffff",
-          height: "70%",
-          width: "50%",
-          borderRadius: "15px",
-          boxShadow:
-            "rgba(136, 165, 191, 0.48) 6px 2px 16px 0px, rgba(255, 255, 255, 0.8) -6px -2px 16px 0px;",
-        }}
-      >
+    <Container>
+      <Global
+        styles={css`
+          body {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+          }
+          div {
+            box-sizing: border-box;
+          }
+        `}
+      />
+      <Card>
         <Header>TODO LIST</Header>
         <AddSection>
           <OutlinedInput
             value={inputVal}
             id="outlined-adornment-weight"
+            className="add-section_input"
             aria-describedby="outlined-weight-helper-text"
-            sx={{ height: "40px", width: "25%" }}
+            placeholder="add task..."
             onChange={(e) => {
               setInputVal(e.target.value);
             }}
           />
           <Select
+            className="add-section_select"
             displayEmpty
             value={priority}
             onChange={(e) => setPriority(Number(e.target.value))}
             inputProps={{ "aria-label": "Without label" }}
-            sx={{ height: "40px", margin: "0px 6px", width: "15%" }}
           >
             {PriorityOptions.map(({ label, value }) => (
               <MenuItem value={value}>
@@ -163,14 +160,15 @@ const TodoList = () => {
             ))}
           </Select>
           <OutlinedInput
+            className="add-section_date"
             type="date"
             value={date}
             onChange={(e) => setDate(String(e.target.value))}
             id="outlined-adornment-weight"
             aria-describedby="outlined-weight-helper-text"
-            sx={{ height: "40px", width: "20%", marginRight: "6px" }}
           />
           <Button
+            className="add-section_button"
             variant="contained"
             size="small"
             sx={{ textTransform: "none" }}
@@ -308,8 +306,8 @@ const TodoList = () => {
             })}
           </List>
         </ListSection>
-      </Box>
-    </Box>
+      </Card>
+    </Container>
   );
 };
 
