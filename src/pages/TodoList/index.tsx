@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef } from "react";
-import axios from "axios";
 import { Global, css } from "@emotion/react";
 import { useQuery } from "react-query";
 import { useOnClickOutside } from "usehooks-ts";
@@ -16,6 +15,13 @@ import StraightIcon from "@mui/icons-material/Straight";
 import SouthIcon from "@mui/icons-material/South";
 import FiberManualRecordIcon from "@mui/icons-material/FiberManualRecord";
 import {
+  TodoListGet,
+  TodoListAdd,
+  TodoListSort,
+  TodoListDelete,
+  TodoListUpdate,
+} from "../../api/api";
+import {
   Container,
   Card,
   Header,
@@ -27,11 +33,6 @@ import {
   FlexSection,
   StatusSection,
 } from "./style.ts";
-
-const TodoListGet = async () => {
-  const res = axios.get("http://localhost:3000/todo");
-  return res;
-};
 
 const PriorityColor = {
   0: "#7a7474",
@@ -69,36 +70,37 @@ const TodoList = () => {
   };
   const addHandler = async () => {
     try {
-      await axios.post("http://localhost:3000/todo", {
+      const body = {
         text: inputVal,
         created_date: date,
         priority: priority,
-      });
+      };
+      await TodoListAdd(body);
       clearData();
       refetch();
     } catch (e) {}
   };
 
   const deleteHandler = async (id) => {
-    await axios.delete(`http://localhost:3000/todo/${id}`);
+    try {
+      await TodoListDelete(id);
+    } catch (e) {}
+
     refetch();
   };
 
   const updateHandler = async (id) => {
     try {
-      await axios.put(`http://localhost:3000/todo/${id}`, { text: updateVal });
+      await TodoListUpdate(id, { text: updateVal });
       refetch();
     } catch (e) {
       //
     }
   };
 
-  const sortHandler = async ({ field, sort }) => {
+  const sortHandler = async (params) => {
     try {
-      const res = await axios.post("http://localhost:3000/sort", {
-        field,
-        sort,
-      });
+      const res = await TodoListSort(params);
       res?.data?.data && setTodoList(res?.data?.data);
     } catch (e) {}
   };
@@ -150,8 +152,8 @@ const TodoList = () => {
             onChange={(e) => setPriority(Number(e.target.value))}
             inputProps={{ "aria-label": "Without label" }}
           >
-            {PriorityOptions.map(({ label, value }) => (
-              <MenuItem value={value}>
+            {PriorityOptions.map(({ label, value }, index) => (
+              <MenuItem value={value} key={index + label}>
                 <FiberManualRecordIcon
                   sx={{ color: `${PriorityColor[value]}`, height: "15px" }}
                 />
@@ -192,7 +194,7 @@ const TodoList = () => {
                   ? "desc"
                   : "asc";
                 setDateSort(sort);
-                sortHandler({ field: "created_date", sort });
+                sortHandler({ field: "created_date1", sort });
               }}
               endIcon={
                 !dateSort || dateSort === "asc" ? (
@@ -231,10 +233,9 @@ const TodoList = () => {
             </Button>
           </div>
         </SortSection>
-        {/* TODO: Can be split out */}
         <ListSection>
           <List>
-            {todoList.map((todo) => {
+            {todoList && todoList?.map((todo) => {
               return isEdit === todo.id ? (
                 <Option key={todo.id} ref={ref}>
                   <OutlinedInput
