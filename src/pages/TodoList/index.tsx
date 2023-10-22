@@ -194,7 +194,7 @@ const TodoList = () => {
                   ? "desc"
                   : "asc";
                 setDateSort(sort);
-                sortHandler({ field: "created_date1", sort });
+                sortHandler({ field: "created_date", sort });
               }}
               endIcon={
                 !dateSort || dateSort === "asc" ? (
